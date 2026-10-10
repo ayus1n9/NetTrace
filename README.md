@@ -23,6 +23,7 @@ In modern Security Operations Center (SOC) environments, analyzing suspicious tr
 - **Strictly Offline Analysis**: No live payloads or suspicious connections are executed or resolved against active infrastructure.
 - **Evidence Immutability**: Source captures are hashed, validated via binary header inspection, and treated as immutable forensic artifacts.
 - **Explainable Attribution**: Clear distinction between *Confirmed*, *Probable*, *Possible*, and *Inconclusive* malware attributions.
+- **Indicator Defanging**: All candidate IPs, domains, and URLs are defanged (`1.1.1[.]1`, `evil[.]com`, `hxxp://...`) to prevent accidental execution or automated preview resolution when sharing forensic findings.
 - **Encrypted Traffic Realism**: HTTPS/TLS encryption prevents passive packet captures from revealing application payloads; extraction is transparently constrained to handshake metadata (SNI, endpoints, ciphers).
 
 ---
@@ -51,6 +52,15 @@ In modern Security Operations Center (SOC) environments, analyzing suspicious tr
                                   │
                                   ▼
                     ┌───────────────────────────┐
+                    │  Structured IOC Pipeline  │
+                    │   • Candidate Extraction  │
+                    │   • Defanging & Typing    │
+                    │   • Internal/External L3  │
+                    │   • JSON / CSV Exports    │
+                    └─────────────┬─────────────┘
+                                  │
+                                  ▼
+                    ┌───────────────────────────┐
                     │   Detection & Analysis    │
                     │   • Suricata Offline IDS  │
                     │   • Custom Rule Validation│
@@ -61,7 +71,6 @@ In modern Security Operations Center (SOC) environments, analyzing suspicious tr
                     ┌───────────────────────────┐
                     │      SOC Investigation    │
                     │   • Unified UTC Timeline  │
-                    │   • Extracted IOC Schema  │
                     │   • MITRE ATT&CK Mapping  │
                     │   • Incident Report (.md) │
                     └───────────────────────────┘
@@ -128,11 +137,16 @@ nettrace extract /path/to/capture.pcap \
   --output-dir cases/example-case/
 ```
 
-Example output saved to `cases/example-case/metadata.json`:
-- **5-Tuple Connection Summaries**: Source/destination IPs, ports, L4 protocols, timestamps, packet/byte counts.
-- **DNS Transactions**: Queried domain names, record types (`A`, `AAAA`, `CNAME`), resolution answers, response codes.
-- **HTTP Sessions**: Cleartext methods (`GET`, `POST`), target hosts, request URIs, and User-Agent strings.
-- **TLS Handshakes**: Observable Server Name Indication (SNI) hostnames and endpoints.
+### Step 3: Structured IOC Extraction & Defanging (Day 3)
+```bash
+nettrace ioc /path/to/capture.pcap \
+  --case-id "PCAP-2026-001" \
+  --output-dir cases/example-case/
+```
+
+Outputs generated:
+- `cases/example-case/iocs.json` (Structured JSON strictly adhering to `schemas/case-report.schema.json`)
+- `cases/example-case/iocs.csv` (Tabular format ready for SIEM, MISP, or OpenCTI ingestion)
 
 ---
 
@@ -140,7 +154,7 @@ Example output saved to `cases/example-case/metadata.json`:
 
 - [x] **Day 1**: Case Intake, Header Validation, and Cryptographic Integrity Verification. (`v0.1.0`)
 - [x] **Day 2**: Connection, DNS, HTTP, and TLS Metadata Extraction Subsystem. (`v0.2.0`)
-- [ ] **Day 3**: Structured IOC Parsing, Defanging, and Schema Validation.
+- [x] **Day 3**: Structured IOC Parsing, Defanging, and Schema Validation. (`v0.3.0`)
 - [ ] **Day 4**: Suricata Offline Analysis & Custom Detection Rules.
 - [ ] **Day 5**: Cross-Source Chronological Event Timeline Generation.
 - [ ] **Day 6**: MITRE ATT&CK Mapping & Incident Report Generation.

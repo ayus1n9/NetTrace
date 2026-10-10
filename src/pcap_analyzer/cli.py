@@ -10,6 +10,11 @@ import click
 
 from pcap_analyzer.extraction import extract_metadata
 from pcap_analyzer.intake import IntakeValidationError, intake_capture
+from pcap_analyzer.ioc_extractor import (
+    export_iocs_to_csv,
+    export_iocs_to_json,
+    extract_iocs,
+)
 
 
 @click.group()
@@ -86,6 +91,34 @@ def extract_cmd(
             click.echo(f"  Results saved: {Path(output_dir) / 'metadata.json'}")
     except Exception as e:
         click.secho(f"✗ Extraction error: {e}", fg="red", err=True)
+        sys.exit(1)
+
+
+@main.command(name="ioc")
+@click.argument("pcap_file", type=click.Path())
+@click.option("--case-id", "-c", required=True, help="Unique case identifier.")
+@click.option("--output-dir", "-o", default="cases/output", type=click.Path(), help="Directory to save IOC outputs.")
+def ioc_cmd(pcap_file: str, case_id: str, output_dir: str) -> None:
+    """Extract, defang, and export candidate indicators of compromise (IOCs)."""
+    try:
+        out_path = Path(output_dir)
+        case_meta = intake_capture(pcap_path=pcap_file, case_id=case_id, output_dir=out_path)
+        net_meta = extract_metadata(pcap_path=pcap_file, case_id=case_id, output_dir=out_path)
+        ioc_report = extract_iocs(net_meta, case_meta)
+
+        json_file = out_path / "iocs.json"
+        csv_file = out_path / "iocs.csv"
+        export_iocs_to_json(ioc_report, json_file)
+        export_iocs_to_csv(ioc_report, csv_file)
+
+        click.echo("✓ Structured IOC extraction complete.")
+        click.echo(f"  IP Candidates:     {len(ioc_report.indicators.ips)}")
+        click.echo(f"  Domain Candidates: {len(ioc_report.indicators.domains)}")
+        click.echo(f"  URLs Identified:   {len(ioc_report.indicators.urls)}")
+        click.echo(f"  JSON Export:       {json_file}")
+        click.echo(f"  CSV Export:        {csv_file}")
+    except Exception as e:
+        click.secho(f"✗ IOC extraction error: {e}", fg="red", err=True)
         sys.exit(1)
 
 

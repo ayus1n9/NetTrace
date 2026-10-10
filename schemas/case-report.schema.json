@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NetTraceInvestigationOutput",
+  "description": "Standardized schema for PCAP investigation indicators, findings, and metadata.",
+  "type": "object",
+  "required": [
+    "case_id",
+    "source_file",
+    "sha256",
+    "indicators",
+    "analysis_status"
+  ],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "description": "Unique case identifier"
+    },
+    "source_file": {
+      "type": "string",
+      "description": "Base filename of the packet capture"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$",
+      "description": "Calculated SHA-256 hash of the capture"
+    },
+    "indicators": {
+      "type": "object",
+      "required": [
+        "ips",
+        "domains",
+        "urls",
+        "file_hashes"
+      ],
+      "properties": {
+        "ips": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "defanged", "ip_version", "is_private", "sources"],
+            "properties": {
+              "value": {"type": "string"},
+              "defanged": {"type": "string"},
+              "ip_version": {"type": "integer"},
+              "is_private": {"type": "boolean"},
+              "sources": {"type": "array", "items": {"type": "string"}},
+              "relevance_notes": {"type": "string"}
+            }
+          }
+        },
+        "domains": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "defanged", "sources"],
+            "properties": {
+              "value": {"type": "string"},
+              "defanged": {"type": "string"},
+              "sources": {"type": "array", "items": {"type": "string"}},
+              "resolved_ips": {"type": "array", "items": {"type": "string"}},
+              "relevance_notes": {"type": "string"}
+            }
+          }
+        },
+        "urls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "defanged", "host", "uri"],
+            "properties": {
+              "value": {"type": "string"},
+              "defanged": {"type": "string"},
+              "host": {"type": "string"},
+              "uri": {"type": "string"},
+              "method": {"type": "string"},
+              "user_agent": {"type": ["string", "null"]}
+            }
+          }
+        },
+        "file_hashes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["hash_type", "value", "source_file"],
+            "properties": {
+              "hash_type": {"type": "string"},
+              "value": {"type": "string"},
+              "source_file": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "analysis_status": {
+      "type": "string",
+      "enum": ["in_progress", "completed", "failed"]
+    }
+  }
+}
