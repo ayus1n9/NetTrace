@@ -1,0 +1,39 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+
+# Security & Sensitive Evidence
+# Never commit real malicious PCAPs or extracted binary artifacts
+evidence/*.pcap
+evidence/*.pcapng
+evidence/*.bin
+evidence/*.exe
+evidence/*.dll
+!evidence/README.md
+
+# Case runtime output logs
+cases/**/tmp/
+cases/**/suricata_logs/
+cases/**/zeek_logs/
