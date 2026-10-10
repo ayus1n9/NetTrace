@@ -78,9 +78,11 @@ In modern Security Operations Center (SOC) environments, analyzing suspicious tr
                                   │
                                   ▼
                     ┌───────────────────────────┐
-                    │      SOC Investigation    │
-                    │   • MITRE ATT&CK Mapping  │
-                    │   • Incident Report (.md) │
+                    │   SOC Incident Reporting  │
+                    │   • ATT&CK Mapping        │
+                    │   • Malware Assessment    │
+                    │   • Containment Playbook  │
+                    │   • Markdown Report (.md) │
                     └───────────────────────────┘
 ```
 
@@ -128,47 +130,21 @@ pytest -v --cov=pcap_analyzer
 
 ## 5. Usage Workflows
 
-### Step 1: Case Intake & Cryptographic Integrity (Day 1)
+### Complete End-to-End Investigation Workflow
+Generate the full SOC incident report, IOC tables, timeline, and structured findings in a single command:
 ```bash
-nettrace intake /path/to/capture.pcap \
-  --case-id "PCAP-2026-001" \
-  --source-url "https://www.malware-traffic-analysis.net/sample.html" \
-  --pub-date "2026-10-10" \
-  --notes "Suspected initial access loader beaconing via HTTPS." \
-  --output-dir cases/example-case/
-```
-
-### Step 2: Metadata Extraction (Day 2)
-```bash
-nettrace extract /path/to/capture.pcap \
+nettrace report /path/to/capture.pcap \
   --case-id "PCAP-2026-001" \
   --output-dir cases/example-case/
 ```
 
-### Step 3: Structured IOC Extraction & Defanging (Day 3)
-```bash
-nettrace ioc /path/to/capture.pcap \
-  --case-id "PCAP-2026-001" \
-  --output-dir cases/example-case/
-```
-
-### Step 4: Network Detection & Behavioral Analysis (Day 4)
-```bash
-nettrace detect /path/to/capture.pcap \
-  --case-id "PCAP-2026-001" \
-  --rules-file configs/suricata/custom.rules \
-  --output-dir cases/example-case/
-```
-
-### Step 5: Chronological Timeline Correlation (Day 5)
-```bash
-nettrace timeline /path/to/capture.pcap \
-  --case-id "PCAP-2026-001" \
-  --output-dir cases/example-case/
-```
-
-Outputs generated:
-- `cases/example-case/timeline.csv` (Standardized chronological event table linking DNS resolution, transport flows, L7 requests, and detection alerts)
+This single command triggers the entire pipeline:
+1. **Intake & Verification**: Records SHA-256 and validates binary capture header.
+2. **Metadata Extraction**: Dissects L4 5-tuples, DNS queries, HTTP verbs/URIs, and TLS SNI hostnames.
+3. **IOC Extraction**: Extracts and defangs candidate IPs, domains, and URLs.
+4. **Behavioral Detection**: Evaluates Suricata rules and calculates beaconing intervals.
+5. **Timeline Correlation**: Merges all events into chronological UTC sequence.
+6. **Incident Report Generation**: Formats an executive and technical markdown report (`incident-report.md`) complete with MITRE ATT&CK mapping, malware family assessment, and containment actions.
 
 ---
 
@@ -179,5 +155,5 @@ Outputs generated:
 - [x] **Day 3**: Structured IOC Parsing, Defanging, and Schema Validation. (`v0.3.0`)
 - [x] **Day 4**: Suricata Offline Detection, Custom Rule Evaluation & Behavioral Analysis. (`v0.4.0`)
 - [x] **Day 5**: Cross-Source Chronological Event Timeline Generation. (`v0.5.0`)
-- [ ] **Day 6**: MITRE ATT&CK Mapping & Incident Report Generation.
+- [x] **Day 6**: MITRE ATT&CK Mapping & Incident Report Generation. (`v0.6.0`)
 - [ ] **Day 7**: End-to-End Case Investigation & Final Release Documentation.

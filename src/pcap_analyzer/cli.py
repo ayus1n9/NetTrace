@@ -17,6 +17,7 @@ from pcap_analyzer.ioc_extractor import (
     export_iocs_to_json,
     extract_iocs,
 )
+from pcap_analyzer.reporting import generate_incident_report
 from pcap_analyzer.timeline import (
     build_timeline,
     export_timeline_csv,
@@ -180,6 +181,27 @@ def timeline_cmd(pcap_file: str, case_id: str, rules_file: str, output_dir: str)
         click.echo(f"  Timeline saved:    {csv_file}")
     except Exception as e:
         click.secho(f"✗ Timeline generation error: {e}", fg="red", err=True)
+        sys.exit(1)
+
+
+@main.command(name="report")
+@click.argument("pcap_file", type=click.Path())
+@click.option("--case-id", "-c", required=True, help="Unique case identifier.")
+@click.option("--rules-file", "-r", default="configs/suricata/custom.rules", type=click.Path(), help="Path to rules file.")
+@click.option("--output-dir", "-o", default="cases/output", type=click.Path(), help="Directory to save incident report.")
+def report_cmd(pcap_file: str, case_id: str, rules_file: str, output_dir: str) -> None:
+    """Generate a comprehensive SOC incident report with ATT&CK mapping."""
+    try:
+        report_path = generate_incident_report(
+            pcap_path=pcap_file,
+            case_id=case_id,
+            rules_file=rules_file,
+            output_dir=output_dir,
+        )
+        click.echo("✓ Incident report generated successfully.")
+        click.echo(f"  Report location: {report_path}")
+    except Exception as e:
+        click.secho(f"✗ Report generation error: {e}", fg="red", err=True)
         sys.exit(1)
 
 
