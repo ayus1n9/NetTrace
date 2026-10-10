@@ -21,15 +21,10 @@ from pcap_analyzer.intake import CaseMetadata
 
 
 def is_rfc1918_or_internal(ip_obj: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
-    """Identify strictly internal corporate network IP ranges (RFC 1918, Loopback, Link-Local).
-
-    Leaves documentation / lab ranges (e.g. 198.51.100.0/24, 203.0.113.0/24) or public IPs
-    marked as external so threat hunting targets are accurately categorized.
-    """
+    """Identify strictly internal corporate network IP ranges (RFC 1918, Loopback, Link-Local)."""
     if ip_obj.is_loopback or ip_obj.is_link_local:
         return True
     if ip_obj.version == 4:
-        # Check standard RFC 1918 private subnets: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
         rfc1918_networks = (
             ipaddress.ip_network("10.0.0.0/8"),
             ipaddress.ip_network("172.16.0.0/12"),
@@ -126,6 +121,9 @@ def extract_iocs(metadata: ExtractedMetadata, case_meta: CaseMetadata) -> CaseIO
     url_map: Dict[str, Dict[str, Any]] = {}
     hash_list: List[FileHashIndicator] = []
 
+    # Map known infrastructure (e.g. DNS resolvers)
+    dns_servers = {dns.dst_ip for dns in metadata.dns_queries if not dns.is_response}
+
     # 1. Connections
     for conn in metadata.connections:
         for ip_addr, role in ((conn.src_ip, "flow_src"), (conn.dst_ip, "flow_dst")):
@@ -139,13 +137,18 @@ def extract_iocs(metadata: ExtractedMetadata, case_meta: CaseMetadata) -> CaseIO
                 except ValueError:
                     continue
 
+                if is_priv:
+                    note = "Internal DNS Resolver / Infrastructure" if ip_addr in dns_servers else "Internal host endpoint"
+                else:
+                    note = "External remote endpoint"
+
                 ip_map[ip_addr] = {
                     "value": ip_addr,
                     "defanged": defang_ip(ip_addr),
                     "ip_version": ip_ver,
                     "is_private": is_priv,
                     "sources": {role},
-                    "relevance_notes": "Internal host endpoint" if is_priv else "External remote endpoint",
+                    "relevance_notes": note,
                 }
             else:
                 ip_map[ip_addr]["sources"].add(role)

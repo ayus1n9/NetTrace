@@ -22,7 +22,7 @@
         "sources": [
           "flow_dst"
         ],
-        "relevance_notes": "Internal host endpoint"
+        "relevance_notes": "Internal DNS Resolver / Infrastructure"
       },
       {
         "value": "198.51.100.44",

@@ -1,6 +1,6 @@
 Indicator_Type,Value,Defanged,Sources,Relevance_Notes
 IP,10.0.0.45,10.0.0[.]45,flow_src,Internal host endpoint
-IP,10.0.0.1,10.0.0[.]1,flow_dst,Internal host endpoint
+IP,10.0.0.1,10.0.0[.]1,flow_dst,Internal DNS Resolver / Infrastructure
 IP,198.51.100.44,198.51.100[.]44,dns_resolution;flow_dst,External remote endpoint
 IP,203.0.113.88,203.0.113[.]88,dns_resolution;flow_dst,External remote endpoint
 Domain,update-portal-cdn.xyz,update-portal-cdn[.]xyz,dns_query;http_host,Queried domain candidate

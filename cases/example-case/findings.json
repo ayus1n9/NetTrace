@@ -1,6 +1,7 @@
 {
   "case_id": "PCAP-2026-MAL-001",
   "pcap_filename": "demo_investigation.pcap",
+  "pcap_path": "/home/s1n9/.gemini/antigravity/scratch/NetTrace/evidence/demo_investigation.pcap",
   "findings": [
     {
       "finding_id": "FIND-001",
@@ -21,28 +22,15 @@
       "timestamp": "2026-10-10T06:31:31.872486+00:00",
       "source_endpoint": "10.0.0.45",
       "destination_endpoint": "10.0.0.1:53",
-      "observed_behavior": "DNS query for 'update-portal-cdn.xyz' resolving to []",
-      "why_suspicious": "High-abuse TLDs and dynamic DNS domains are commonly registered by threat actors for short-lived C2 infrastructure.",
-      "alternative_benign_explanations": "Benign web navigation to a legitimate business website utilizing non-standard TLDs.",
+      "observed_behavior": "Outbound DNS query for domain 'update-portal-cdn.xyz' (resolved to ['198.51.100.44'])",
+      "why_suspicious": "High-abuse TLDs (.xyz) are commonly registered by threat actors for low-cost, short-lived delivery or C2 infrastructure.",
+      "alternative_benign_explanations": "Benign web navigation to a legitimate business website utilizing the .xyz TLD.",
       "confidence_level": "Medium",
       "recommended_follow_up": "Check passive DNS history for domain; query endpoint proxy/web browsing logs for referer URL.",
       "rule_id": "1000002"
     },
     {
       "finding_id": "FIND-003",
-      "evidence_source": "DNS Log / Rule SID 1000002",
-      "timestamp": "2026-10-10T06:31:31.872839+00:00",
-      "source_endpoint": "10.0.0.1",
-      "destination_endpoint": "10.0.0.45:53",
-      "observed_behavior": "DNS query for 'update-portal-cdn.xyz' resolving to ['198.51.100.44']",
-      "why_suspicious": "High-abuse TLDs and dynamic DNS domains are commonly registered by threat actors for short-lived C2 infrastructure.",
-      "alternative_benign_explanations": "Benign web navigation to a legitimate business website utilizing non-standard TLDs.",
-      "confidence_level": "Medium",
-      "recommended_follow_up": "Check passive DNS history for domain; query endpoint proxy/web browsing logs for referer URL.",
-      "rule_id": "1000002"
-    },
-    {
-      "finding_id": "FIND-004",
       "evidence_source": "TLS Handshake / Rule SID 1000004",
       "timestamp": "2026-10-10T06:31:31.873784+00:00",
       "source_endpoint": "10.0.0.45:49201",
@@ -55,7 +43,7 @@
       "rule_id": "1000004"
     },
     {
-      "finding_id": "FIND-005",
+      "finding_id": "FIND-004",
       "evidence_source": "TLS Handshake / Rule SID 1000004",
       "timestamp": "2026-10-10T06:31:31.873954+00:00",
       "source_endpoint": "10.0.0.45:49202",
@@ -68,6 +56,13 @@
       "rule_id": "1000004"
     }
   ],
+  "suricata_status": {
+    "attempted": false,
+    "success": false,
+    "return_code": null,
+    "error_message": null,
+    "alerts_found": 0
+  },
   "suricata_alerts_count": 0,
-  "behavioral_anomalies_count": 5
+  "behavioral_anomalies_count": 4
 }

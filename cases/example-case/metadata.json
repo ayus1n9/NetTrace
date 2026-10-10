@@ -1,8 +1,9 @@
 {
   "case_id": "PCAP-2026-MAL-001",
   "pcap_filename": "demo_investigation.pcap",
+  "pcap_path": "/home/s1n9/.gemini/antigravity/scratch/NetTrace/evidence/demo_investigation.pcap",
   "extraction_source": "pure_python_scapy",
-  "extracted_at": "2026-10-10T06:31:45.737411+00:00",
+  "extracted_at": "2026-10-10T07:47:44.820524+00:00",
   "connections": [
     {
       "flow_id": "10.0.0.1:53->10.0.0.45:53210/UDP",
@@ -72,6 +73,7 @@
       "dst_ip": "10.0.0.1",
       "query_name": "update-portal-cdn.xyz",
       "query_type": "A",
+      "is_response": false,
       "response_code": null,
       "answers": []
     },
@@ -81,6 +83,7 @@
       "dst_ip": "10.0.0.45",
       "query_name": "update-portal-cdn.xyz",
       "query_type": "A",
+      "is_response": true,
       "response_code": "0",
       "answers": [
         "198.51.100.44"
@@ -92,6 +95,7 @@
       "dst_ip": "10.0.0.1",
       "query_name": "c2-beacon-service.net",
       "query_type": "A",
+      "is_response": false,
       "response_code": null,
       "answers": []
     },
@@ -101,6 +105,7 @@
       "dst_ip": "10.0.0.45",
       "query_name": "c2-beacon-service.net",
       "query_type": "A",
+      "is_response": true,
       "response_code": "0",
       "answers": [
         "203.0.113.88"

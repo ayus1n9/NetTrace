@@ -3,7 +3,7 @@
 **Case Identifier**: `PCAP-2026-MAL-001`  
 **Target PCAP**: `demo_investigation.pcap`  
 **Capture SHA-256**: `070cf0f6e9a95094007826f2e0effbf3e0d652f28df534d71dfbc8eb5fb5ae38`  
-**Analysis Timestamp**: `2026-10-10T06:31:31.877617+00:00`  
+**Analysis Timestamp**: `2026-10-10T07:47:44.817809+00:00`  
 **Dataset Source**: Offline Capture Artifact  
 **Status**: `Completed`  
 
@@ -13,11 +13,13 @@
 
 A network traffic investigation was performed on packet capture `demo_investigation.pcap` to reconstruct adversary activity, identify compromised host endpoints, extract indicators of compromise (IOCs), and evaluate threats to the enterprise environment.
 
-The investigation identified **2 internal host(s)** (`10.0.0.1, 10.0.0.45`) interacting with external infrastructure across **5 connection flow(s)**. Suspicious activity was detected including **0 signature alert(s)** and **5 behavioral anomaly finding(s)**.
+The investigation identified **1 host(s) exhibiting suspicious outbound activity** (`10.0.0.45`). Infrastructure hosts (such as internal DNS resolvers `10.0.0.1`) were observed facilitating network name resolution and are categorized as internal infrastructure rather than compromised assets.
 
-- **Malware Family Assessment**: **Probable** (`Multi-Stage Loader / C2 Agent`)
-- **Assessed Impact**: Potential host compromise with staged executable delivery and subsequent Command-and-Control (C2) communication attempts.
-- **Immediate Action**: Host isolation and endpoint memory/process triage recommended.
+Suspicious events detected include **0 signature alert(s)** and **4 behavioral anomaly finding(s)**.
+
+- **Malware Family Assessment**: **Possible** (`Unclassified Stager / Dropper`)
+- **Assessed Impact**: Potential host compromise with staged executable delivery attempt and subsequent Command-and-Control (C2) communication.
+- **Immediate Action**: Isolate suspected host `10.0.0.45` and collect endpoint memory/process triage artifacts.
 
 ---
 
@@ -37,18 +39,18 @@ Analysis followed a structured, repeatable SOC defensive methodology:
 1. **Intake & Verification**: Capture format verification, checksum verification, and provenance documentation.
 2. **Metadata Dissection**: 5-tuple flow aggregation, DNS resolution mapping, cleartext HTTP inspection, and TLS ClientHello SNI parsing.
 3. **Detection Engine Evaluation**: Offline Suricata signature evaluation (`custom.rules`) and mathematical beaconing interval analysis.
-4. **Adversary Technique Mapping**: Aligning network evidence to the MITRE ATT&CK matrix.
-5. **Report & Containment Formulation**: Evidence-grounded remediation recommendations.
+4. **Adversary Technique Mapping**: Aligning network evidence to the MITRE ATT&CK matrix using defensible, evidence-grounded statuses.
+5. **Report & Containment Formulation**: Evidence-grounded remediation recommendations distinguishing compromised clients from supporting infrastructure.
 
 ---
 
 ## 4. Affected Hosts & Network Endpoints
 
-### Internal Affected Endpoints
-| IP Address | Role / Observation | Defanged |
+### Internal Network Scoping
+| IP Address | Role & Forensic Status | Defanged |
 |---|---|---|
-| `10.0.0.1` | Suspected compromised internal client | `10[.]0[.]0[.]1` |
-| `10.0.0.45` | Suspected compromised internal client | `10[.]0[.]0[.]45` |
+| `10.0.0.45` | **Suspected Compromised Host** (Origin of suspicious egress traffic) | `10[.]0[.]0[.]45` |
+| `10.0.0.1` | **Internal DNS Resolver / Infrastructure** (Not compromised; resolved queries) | `10[.]0[.]0[.]1` |
 
 ### External Infrastructure Interacted With
 | IP / Endpoint | Association | Status |
@@ -60,7 +62,7 @@ Analysis followed a structured, repeatable SOC defensive methodology:
 
 ## 5. Key Observations & Findings
 
-Total Findings: **5**
+Total Findings: **4**
 
 ### [FIND-001] GET request for binary file '/update_agent.exe' to host 'update-portal-cdn.xyz'
 - **Evidence Source**: `HTTP Log / Rule SID 1000001`
@@ -71,25 +73,16 @@ Total Findings: **5**
 - **Confidence Level**: `High`
 - **Recommended Follow-up**: Investigate endpoint process creation logs (Sysmon EID 1) around timestamp; acquire downloaded file if available to compute hash.
 
-### [FIND-002] DNS query for 'update-portal-cdn.xyz' resolving to []
+### [FIND-002] Outbound DNS query for domain 'update-portal-cdn.xyz' (resolved to ['198.51.100.44'])
 - **Evidence Source**: `DNS Log / Rule SID 1000002`
 - **Timestamp (UTC)**: `2026-10-10T06:31:31.872486+00:00`
 - **Source**: `10.0.0.45` ➔ **Destination**: `10.0.0.1:53`
-- **Why Suspicious**: High-abuse TLDs and dynamic DNS domains are commonly registered by threat actors for short-lived C2 infrastructure.
-- **Alternative Benign Explanation**: Benign web navigation to a legitimate business website utilizing non-standard TLDs.
+- **Why Suspicious**: High-abuse TLDs (.xyz) are commonly registered by threat actors for low-cost, short-lived delivery or C2 infrastructure.
+- **Alternative Benign Explanation**: Benign web navigation to a legitimate business website utilizing the .xyz TLD.
 - **Confidence Level**: `Medium`
 - **Recommended Follow-up**: Check passive DNS history for domain; query endpoint proxy/web browsing logs for referer URL.
 
-### [FIND-003] DNS query for 'update-portal-cdn.xyz' resolving to ['198.51.100.44']
-- **Evidence Source**: `DNS Log / Rule SID 1000002`
-- **Timestamp (UTC)**: `2026-10-10T06:31:31.872839+00:00`
-- **Source**: `10.0.0.1` ➔ **Destination**: `10.0.0.45:53`
-- **Why Suspicious**: High-abuse TLDs and dynamic DNS domains are commonly registered by threat actors for short-lived C2 infrastructure.
-- **Alternative Benign Explanation**: Benign web navigation to a legitimate business website utilizing non-standard TLDs.
-- **Confidence Level**: `Medium`
-- **Recommended Follow-up**: Check passive DNS history for domain; query endpoint proxy/web browsing logs for referer URL.
-
-### [FIND-004] TLS ClientHello SNI header requesting server name 'beacon-c2.net'
+### [FIND-003] TLS ClientHello SNI header requesting server name 'beacon-c2.net'
 - **Evidence Source**: `TLS Handshake / Rule SID 1000004`
 - **Timestamp (UTC)**: `2026-10-10T06:31:31.873784+00:00`
 - **Source**: `10.0.0.45:49201` ➔ **Destination**: `203.0.113.88:443`
@@ -98,7 +91,7 @@ Total Findings: **5**
 - **Confidence Level**: `High`
 - **Recommended Follow-up**: Inspect active network connections and memory artifacts of the source host for injected beacon threads.
 
-### [FIND-005] TLS ClientHello SNI header requesting server name 'beacon-c2.net'
+### [FIND-004] TLS ClientHello SNI header requesting server name 'beacon-c2.net'
 - **Evidence Source**: `TLS Handshake / Rule SID 1000004`
 - **Timestamp (UTC)**: `2026-10-10T06:31:31.873954+00:00`
 - **Source**: `10.0.0.45:49202` ➔ **Destination**: `203.0.113.88:443`
@@ -115,9 +108,8 @@ Total Findings: **5**
 |---|---|---|---|---|---|
 | `2026-10-10T06:31:31.872486+00:00` | **DNS Query** | `10.0.0.45` | `10.0.0.1:53` | Lookup for 'update-portal-cdn.xyz' (Type A) | Host initiated domain name lookup for 'update-portal-cdn.xyz'. |
 | `2026-10-10T06:31:31.872486+00:00` | **Outbound Connection** | `10.0.0.45:53210` | `10.0.0.1:53` | L4 UDP connection (2 packets, 171 bytes) | Host established network transport session to 10.0.0.1:53. |
-| `2026-10-10T06:31:31.872486+00:00` | **Detection Alert** | `10.0.0.45` | `10.0.0.1:53` | DNS query for 'update-portal-cdn.xyz' resolving to [] | Matched detection rule 1000002: High-abuse TLDs and dynamic DNS domains are commonly registered by threat actors... |
+| `2026-10-10T06:31:31.872486+00:00` | **Detection Alert** | `10.0.0.45` | `10.0.0.1:53` | Outbound DNS query for domain 'update-portal-cdn.xyz' (resolved to ['198.51.100.44']) | Matched detection rule 1000002: High-abuse TLDs (.xyz) are commonly registered by threat actors for low-cost, sh... |
 | `2026-10-10T06:31:31.872839+00:00` | **DNS Response** | `10.0.0.45` | `10.0.0.1` | Resolved 'update-portal-cdn.xyz' (A) -> 198.51.100.44 | Host resolved domain 'update-portal-cdn.xyz' prior to potential connection. |
-| `2026-10-10T06:31:31.872839+00:00` | **Detection Alert** | `10.0.0.1` | `10.0.0.45:53` | DNS query for 'update-portal-cdn.xyz' resolving to ['198.51.100.44'] | Matched detection rule 1000002: High-abuse TLDs and dynamic DNS domains are commonly registered by threat actors... |
 | `2026-10-10T06:31:31.873157+00:00` | **Outbound Connection** | `10.0.0.45:49200` | `198.51.100.44:80` | L4 TCP connection (1 packets, 174 bytes) | Host established network transport session to 198.51.100.44:80. |
 | `2026-10-10T06:31:31.873157+00:00` | **HTTP Request** | `10.0.0.45:49200` | `198.51.100.44:80` | GET /update_agent.exe (Host: update-portal-cdn.xyz) | Application-layer cleartext request to 'update-portal-cdn.xyz/update_agent.exe'. |
 | `2026-10-10T06:31:31.873157+00:00` | **Detection Alert** | `10.0.0.45:49200` | `198.51.100.44:80` | GET request for binary file '/update_agent.exe' to host 'update-portal-cdn.xyz' | Matched detection rule 1000001: Adversaries frequently deliver second-stage implants, drop-executables, or tools... |
@@ -159,22 +151,22 @@ Total Findings: **5**
 
 ## 8. Malware-Family Assessment
 
-- **Confidence Tier**: **Probable**
-- **Suspected Classification**: `Multi-Stage Loader / C2 Agent`
-- **Forensic Rationale**: Traffic patterns demonstrate a staged delivery sequence: initial HTTP payload transfer followed by structured TLS C2 beaconing. Multiple corroborating network indicators observed.
-- **Alternative Benign Hypotheses**: Automated security assessment scanner, penetration testing beacon (e.g. Cobalt Strike, Mythic, Sliver), or custom internal automated updater.
-- **Required Endpoint Telemetry**: Need endpoint file sample hash, binary static analysis / sandbox detonation, and process execution telemetry to achieve Confirmed attribution.
+- **Confidence Tier**: **Possible**
+- **Suspected Classification**: `Unclassified Stager / Dropper`
+- **Forensic Rationale**: Observed cleartext binary retrieval consistent with initial staging, but insufficient secondary C2 network telemetry to classify an adversary campaign.
+- **Alternative Benign Hypotheses**: Legitimate software download, administrative utility, or non-malicious installation package.
+- **Required Endpoint Telemetry**: Executable hash analysis on VirusTotal/ThreatGrid and endpoint execution telemetry.
 
 ---
 
 ## 9. MITRE ATT&CK Technique Mapping
 
-| Tactic | Technique ID | Technique Name | Status | Supporting Evidence | Endpoint Verification Required |
+| Tactic | Technique ID | Technique Name | Evidentiary Status | Supporting Evidence | Endpoint Verification Required |
 |---|---|---|---|---|---|
-| **Command and Control** | `T1071.004` | Application Layer Protocol: DNS | `Confirmed` | Observed 4 DNS transactions querying external domains. | Verify process DNS client cache and resolving application identity via endpoint socket logs. |
-| **Command and Control / Execution** | `T1105` | Ingress Tool Transfer | `Confirmed` | Cleartext HTTP GET request observed requesting a Windows PE binary (.exe) payload. | Examine Sysmon Event ID 11 (FileCreate) and Sysmon Event ID 1 (Process Create) to confirm file write to disk and execution. |
-| **Command and Control** | `T1071.001` | Application Layer Protocol: Web Protocols | `Confirmed` | Host engaged in HTTP web communications to external infrastructure. | Review parent process tree (e.g. powershell.exe, cmd.exe, or browser) that spawned the outbound connection. |
-| **Command and Control** | `T1573.002` | Encrypted Channel: Asymmetric Cryptography (TLS) | `Probable` | Observed TLS ClientHello handshakes to external destination endpoints. | Inspect host memory for injected DLLs or living-off-the-land binaries maintaining persistent HTTPS sockets. |
+| **Command and Control** | `T1071.004` | Application Layer Protocol: DNS | `Hypothesis / Suspected` | Observed DNS queries querying flagged or unusual infrastructure (e.g. Outbound DNS query for domain 'update-portal-cdn.xyz' (resolved to ['198.51.100.44'])). | Verify process DNS query cache, parent process identity, and whether data exfiltration or C2 tunneling over TXT/NULL records took place. |
+| **Command and Control / Execution** | `T1105` | Ingress Tool Transfer | `Observed Transfer Attempt` | Outbound HTTP GET request for executable binary '/update_agent.exe' from host 'update-portal-cdn.xyz'. | Requires endpoint confirmation: Sysmon Event ID 11 (FileCreate) to prove write to disk, and Sysmon Event ID 1 (Process Create) to prove execution. |
+| **Command and Control** | `T1071.001` | Application Layer Protocol: Web Protocols | `Hypothesis / Suspected` | Host generated cleartext HTTP requests (1 request(s)) to external endpoints. | Endpoint process lineage required (e.g., verifying whether powershell.exe, curl, or standard browser made the requests). |
+| **Command and Control** | `T1573.002` | Encrypted Channel: Asymmetric Cryptography (TLS) | `Hypothesis / Suspected` | Observed TLS handshake with suspected C2 SNI 'TLS ClientHello SNI header requesting server name 'beacon-c2.net''. | Memory inspection / TLS session secret acquisition required to decrypt and inspect application-layer payload contents. |
 
 ---
 
@@ -188,7 +180,7 @@ Total Findings: **5**
 
 ## 11. Recommended Containment & Remediation Actions
 
-1. **Immediate Host Containment**: Isolate internal host(s) from the enterprise network via EDR isolation or VLAN quarantine.
+1. **Immediate Host Containment**: Isolate suspected internal host(s) exhibiting anomalous egress from the enterprise network via EDR isolation or VLAN quarantine.
 2. **Network Blocklist Deployment**: Block external candidate IPs and domains at the perimeter firewall and DNS sinkhole.
 3. **Endpoint Triage (EDR / Forensic Collection)**:
    - Collect Sysmon logs (EID 1, 3, 11) and PowerShell script block logs (EID 4104).

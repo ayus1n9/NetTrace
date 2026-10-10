@@ -14,7 +14,7 @@ import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -36,11 +36,22 @@ class Finding(BaseModel):
     rule_id: Optional[str] = None
 
 
+class SuricataExecutionResult(BaseModel):
+    """Result of Suricata engine execution."""
+    attempted: bool = False
+    success: bool = False
+    return_code: Optional[int] = None
+    error_message: Optional[str] = None
+    alerts_found: int = 0
+
+
 class DetectionReport(BaseModel):
     """Aggregate findings report from signatures and behavioral analysis."""
     case_id: str
     pcap_filename: str
+    pcap_path: str = ""
     findings: List[Finding] = Field(default_factory=list)
+    suricata_status: SuricataExecutionResult = Field(default_factory=SuricataExecutionResult)
     suricata_alerts_count: int = 0
     behavioral_anomalies_count: int = 0
 
@@ -92,11 +103,27 @@ def detect_beaconing_intervals(
 
 def run_suricata_offline(
     pcap_path: Path, rules_file: Path, output_dir: Path
-) -> List[Dict[str, Any]]:
-    """Execute Suricata offline engine (`suricata -r`) and parse eve.json output."""
+) -> Tuple[List[Dict[str, Any]], SuricataExecutionResult]:
+    """Execute Suricata offline engine (`suricata -r`) with diagnostic error reporting.
+
+    Returns:
+        Tuple of (alerts_list, execution_result)
+    """
     suricata_bin = shutil.which("suricata")
     if not suricata_bin:
-        return []
+        return [], SuricataExecutionResult(
+            attempted=False,
+            success=False,
+            error_message="Suricata binary not installed or not in PATH."
+        )
+
+    resolved_pcap = Path(pcap_path).resolve()
+    if not resolved_pcap.exists():
+        return [], SuricataExecutionResult(
+            attempted=True,
+            success=False,
+            error_message=f"Target PCAP file does not exist: {resolved_pcap}"
+        )
 
     output_dir.mkdir(parents=True, exist_ok=True)
     eve_path = output_dir / "eve.json"
@@ -105,15 +132,26 @@ def run_suricata_offline(
 
     cmd = [
         suricata_bin,
-        "-r", str(pcap_path),
-        "-S", str(rules_file),
-        "-l", str(output_dir),
+        "-r", str(resolved_pcap),
+        "-S", str(rules_file.resolve()),
+        "-l", str(output_dir.resolve()),
         "--runmode", "single",
     ]
     try:
-        subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=60)
-    except Exception:
-        return []
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        if proc.returncode != 0:
+            return [], SuricataExecutionResult(
+                attempted=True,
+                success=False,
+                return_code=proc.returncode,
+                error_message=proc.stderr.strip() or f"Suricata exited with code {proc.returncode}"
+            )
+    except Exception as e:
+        return [], SuricataExecutionResult(
+            attempted=True,
+            success=False,
+            error_message=f"Failed to execute Suricata subprocess: {str(e)}"
+        )
 
     alerts = []
     if eve_path.exists():
@@ -127,17 +165,23 @@ def run_suricata_offline(
                         alerts.append(event)
                 except Exception:
                     continue
-    return alerts
+
+    return alerts, SuricataExecutionResult(
+        attempted=True,
+        success=True,
+        return_code=0,
+        alerts_found=len(alerts),
+    )
 
 
 def evaluate_custom_rules_fallback(
     metadata: ExtractedMetadata, rules_file: Optional[Path] = None
 ) -> List[Finding]:
-    """Pure-Python signature rule evaluation matching custom.rules logic."""
+    """Pure-Python signature rule evaluation matching exact custom.rules logic."""
     findings: List[Finding] = []
     f_idx = 1
 
-    # Rule 1: HTTP Executable download (.exe)
+    # Rule 1: HTTP Executable download (.exe) - SID 1000001
     for http in metadata.http_requests:
         if http.method.upper() == "GET" and http.uri.lower().endswith(".exe"):
             findings.append(Finding(
@@ -155,27 +199,35 @@ def evaluate_custom_rules_fallback(
             ))
             f_idx += 1
 
-    # Rule 2: Suspicious Dynamic DNS / TLD query (.xyz)
+    # Rule 2: Suspicious Dynamic DNS / TLD query (.xyz) - SID 1000002
+    # Evaluated ONLY on outbound queries, correlating responses to avoid duplicates
     for dns in metadata.dns_queries:
-        if dns.query_name.lower().endswith(".xyz") or "malicious" in dns.query_name.lower() or "evil" in dns.query_name.lower():
+        if not dns.is_response and dns.query_name.lower().endswith(".xyz"):
+            # Correlate answers from response record if available
+            resp_answers = []
+            for resp in metadata.dns_queries:
+                if resp.is_response and resp.query_name.lower() == dns.query_name.lower():
+                    resp_answers.extend(resp.answers)
+
+            ans_note = f" (resolved to {list(set(resp_answers))})" if resp_answers else " (no resolved answers)"
             findings.append(Finding(
                 finding_id=f"FIND-{f_idx:03d}",
                 evidence_source="DNS Log / Rule SID 1000002",
                 timestamp=dns.timestamp,
                 source_endpoint=f"{dns.src_ip}",
                 destination_endpoint=f"{dns.dst_ip}:53",
-                observed_behavior=f"DNS query for '{dns.query_name}' resolving to {dns.answers}",
-                why_suspicious="High-abuse TLDs and dynamic DNS domains are commonly registered by threat actors for short-lived C2 infrastructure.",
-                alternative_benign_explanations="Benign web navigation to a legitimate business website utilizing non-standard TLDs.",
+                observed_behavior=f"Outbound DNS query for domain '{dns.query_name}'{ans_note}",
+                why_suspicious="High-abuse TLDs (.xyz) are commonly registered by threat actors for low-cost, short-lived delivery or C2 infrastructure.",
+                alternative_benign_explanations="Benign web navigation to a legitimate business website utilizing the .xyz TLD.",
                 confidence_level="Medium",
                 recommended_follow_up="Check passive DNS history for domain; query endpoint proxy/web browsing logs for referer URL.",
                 rule_id="1000002",
             ))
             f_idx += 1
 
-    # Rule 4: TLS SNI Matching C2 pattern
+    # Rule 4: TLS SNI Matching C2 pattern - SID 1000004
     for tls in metadata.tls_handshakes:
-        if tls.server_name and ("beacon" in tls.server_name.lower() or "c2" in tls.server_name.lower()):
+        if tls.server_name and "beacon-c2" in tls.server_name.lower():
             findings.append(Finding(
                 finding_id=f"FIND-{f_idx:03d}",
                 evidence_source="TLS Handshake / Rule SID 1000004",
@@ -198,14 +250,25 @@ def analyze_suspicious_behavior(
     metadata: ExtractedMetadata,
     rules_file: Optional[Path] = None,
     output_dir: Optional[Path] = None,
+    explicit_pcap_path: Optional[str | Path] = None,
 ) -> DetectionReport:
     """Perform comprehensive network detection combining Suricata and behavioral analysis."""
     all_findings: List[Finding] = []
+    suricata_status = SuricataExecutionResult()
     suricata_count = 0
 
+    # Resolve target PCAP path
+    target_pcap_path = None
+    if explicit_pcap_path:
+        target_pcap_path = Path(explicit_pcap_path).resolve()
+    elif metadata.pcap_path and Path(metadata.pcap_path).exists():
+        target_pcap_path = Path(metadata.pcap_path).resolve()
+    elif Path(metadata.pcap_filename).exists():
+        target_pcap_path = Path(metadata.pcap_filename).resolve()
+
     # 1. Attempt Suricata offline if available and rules provided
-    if rules_file and rules_file.exists() and output_dir and shutil.which("suricata"):
-        raw_alerts = run_suricata_offline(Path(metadata.pcap_filename), rules_file, output_dir)
+    if rules_file and Path(rules_file).exists() and output_dir and shutil.which("suricata") and target_pcap_path:
+        raw_alerts, suricata_status = run_suricata_offline(target_pcap_path, Path(rules_file), Path(output_dir))
         suricata_count = len(raw_alerts)
         for idx, alert in enumerate(raw_alerts, start=1):
             alert_data = alert.get("alert", {})
@@ -223,9 +286,9 @@ def analyze_suspicious_behavior(
                 rule_id=str(alert_data.get("signature_id")),
             ))
 
-    # 2. Signature Fallback Evaluation (ensures detection works offline and without external binaries)
+    # 2. Signature Fallback Evaluation (ensures detection operates deterministically if Suricata is not run)
     if not all_findings:
-        fallback_hits = evaluate_custom_rules_fallback(metadata, rules_file)
+        fallback_hits = evaluate_custom_rules_fallback(metadata, Path(rules_file) if rules_file else None)
         all_findings.extend(fallback_hits)
 
     # 3. Behavioral Analysis: Non-Standard Outbound High Ports
@@ -270,7 +333,9 @@ def analyze_suspicious_behavior(
     return DetectionReport(
         case_id=metadata.case_id,
         pcap_filename=metadata.pcap_filename,
+        pcap_path=str(target_pcap_path) if target_pcap_path else metadata.pcap_path,
         findings=all_findings,
+        suricata_status=suricata_status,
         suricata_alerts_count=suricata_count,
         behavioral_anomalies_count=len(all_findings) - suricata_count,
     )

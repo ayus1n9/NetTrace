@@ -48,6 +48,7 @@ class DNSRecord(BaseModel):
     dst_ip: str
     query_name: str
     query_type: str
+    is_response: bool = False
     response_code: Optional[str] = None
     answers: List[str] = Field(default_factory=list)
 
@@ -82,6 +83,7 @@ class ExtractedMetadata(BaseModel):
     """Aggregate network metadata extracted from a capture."""
     case_id: str
     pcap_filename: str
+    pcap_path: str = ""
     extraction_source: str
     extracted_at: str
     connections: List[ConnectionRecord] = Field(default_factory=list)
@@ -184,7 +186,8 @@ def extract_metadata_scapy(pcap_path: Path, case_id: str) -> ExtractedMetadata:
         15: "MX", 16: "TXT", 28: "AAAA", 33: "SRV", 255: "ANY"
     }
 
-    with PcapReader(str(pcap_path)) as reader:
+    resolved_pcap = Path(pcap_path).resolve()
+    with PcapReader(str(resolved_pcap)) as reader:
         for pkt in reader:
             pkt_time = float(pkt.time)
             iso_time = _ts_to_iso(pkt_time)
@@ -251,6 +254,7 @@ def extract_metadata_scapy(pcap_path: Path, case_id: str) -> ExtractedMetadata:
                         dst_ip=dst_ip,
                         query_name=qname,
                         query_type=qtype,
+                        is_response=False,
                     ))
                 elif dns_layer.qr == 1 and qd:  # Response
                     qname_raw = qd[0].qname if isinstance(qd, list) else qd.qname
@@ -273,6 +277,7 @@ def extract_metadata_scapy(pcap_path: Path, case_id: str) -> ExtractedMetadata:
                         dst_ip=dst_ip,
                         query_name=qname,
                         query_type=qtype,
+                        is_response=True,
                         response_code=str(dns_layer.rcode),
                         answers=answers,
                     ))
@@ -329,7 +334,8 @@ def extract_metadata_scapy(pcap_path: Path, case_id: str) -> ExtractedMetadata:
 
     return ExtractedMetadata(
         case_id=case_id,
-        pcap_filename=pcap_path.name,
+        pcap_filename=resolved_pcap.name,
+        pcap_path=str(resolved_pcap),
         extraction_source="pure_python_scapy",
         extracted_at=datetime.now(timezone.utc).isoformat(),
         connections=[ConnectionRecord(**data) for data in flows.values()],
@@ -341,19 +347,21 @@ def extract_metadata_scapy(pcap_path: Path, case_id: str) -> ExtractedMetadata:
 
 def extract_metadata_tshark(pcap_path: Path, case_id: str) -> ExtractedMetadata:
     """Extract metadata using TShark CLI, falling back to Scapy on failure."""
+    resolved_pcap = Path(pcap_path).resolve()
     tshark_bin = shutil.which("tshark")
     if not tshark_bin:
-        return extract_metadata_scapy(pcap_path, case_id)
+        return extract_metadata_scapy(resolved_pcap, case_id)
 
     try:
         cmd = [
             tshark_bin,
-            "-r", str(pcap_path),
+            "-r", str(resolved_pcap),
             "-T", "json",
             "-e", "frame.time_epoch",
             "-e", "ip.src", "-e", "ip.dst",
             "-e", "tcp.srcport", "-e", "tcp.dstport",
             "-e", "udp.srcport", "-e", "udp.dstport",
+            "-e", "dns.flags.response",
             "-e", "dns.qry.name", "-e", "dns.qry.type", "-e", "dns.a",
             "-e", "http.request.method", "-e", "http.host", "-e", "http.request.uri", "-e", "http.user_agent",
             "-e", "tls.handshake.extensions_server_name",
@@ -408,12 +416,15 @@ def extract_metadata_tshark(pcap_path: Path, case_id: str) -> ExtractedMetadata:
                 qname = layers["dns.qry.name"][0]
                 qtype = layers.get("dns.qry.type", ["1"])[0]
                 answers = layers.get("dns.a", [])
+                is_resp = layers.get("dns.flags.response", ["0"])[0] == "1"
                 dns_records.append(DNSRecord(
                     timestamp=iso_time,
                     src_ip=src_ip,
                     dst_ip=dst_ip,
                     query_name=qname,
                     query_type=str(qtype),
+                    is_response=is_resp,
+                    response_code="0" if is_resp else None,
                     answers=answers if isinstance(answers, list) else [answers],
                 ))
 
@@ -447,7 +458,8 @@ def extract_metadata_tshark(pcap_path: Path, case_id: str) -> ExtractedMetadata:
 
         return ExtractedMetadata(
             case_id=case_id,
-            pcap_filename=pcap_path.name,
+            pcap_filename=resolved_pcap.name,
+            pcap_path=str(resolved_pcap),
             extraction_source="tshark",
             extracted_at=datetime.now(timezone.utc).isoformat(),
             connections=[ConnectionRecord(**d) for d in flows.values()],
@@ -456,7 +468,7 @@ def extract_metadata_tshark(pcap_path: Path, case_id: str) -> ExtractedMetadata:
             tls_handshakes=tls_records,
         )
     except Exception:
-        return extract_metadata_scapy(pcap_path, case_id)
+        return extract_metadata_scapy(resolved_pcap, case_id)
 
 
 def extract_metadata(

@@ -140,17 +140,27 @@ def detect_cmd(pcap_file: str, case_id: str, rules_file: str, output_dir: str) -
     try:
         out_path = Path(output_dir)
         out_path.mkdir(parents=True, exist_ok=True)
-        net_meta = extract_metadata(pcap_path=pcap_file, case_id=case_id, output_dir=out_path)
+        resolved_pcap = Path(pcap_file).resolve()
+        net_meta = extract_metadata(pcap_path=resolved_pcap, case_id=case_id, output_dir=out_path)
         rf = Path(rules_file) if Path(rules_file).exists() else None
 
-        report = analyze_suspicious_behavior(net_meta, rules_file=rf, output_dir=out_path)
+        report = analyze_suspicious_behavior(
+            net_meta, rules_file=rf, output_dir=out_path, explicit_pcap_path=resolved_pcap
+        )
         findings_path = out_path / "findings.json"
         with open(findings_path, "w", encoding="utf-8") as f:
             f.write(report.model_dump_json(indent=2))
 
         click.echo("✓ Network detection analysis complete.")
+        if report.suricata_status.attempted:
+            if report.suricata_status.success:
+                click.echo(f"  Suricata Status:     Success ({report.suricata_alerts_count} alert(s))")
+            else:
+                click.secho(f"  Suricata Status:     Failed ({report.suricata_status.error_message})", fg="yellow")
+        else:
+            click.echo("  Suricata Status:     Skipped (using fallback rule evaluation)")
+
         click.echo(f"  Total Findings:      {len(report.findings)}")
-        click.echo(f"  Suricata Alerts:     {report.suricata_alerts_count}")
         click.echo(f"  Behavior Anomalies:  {report.behavioral_anomalies_count}")
         click.echo(f"  Findings saved:      {findings_path}")
     except Exception as e:
@@ -168,9 +178,12 @@ def timeline_cmd(pcap_file: str, case_id: str, rules_file: str, output_dir: str)
     try:
         out_path = Path(output_dir)
         out_path.mkdir(parents=True, exist_ok=True)
-        net_meta = extract_metadata(pcap_path=pcap_file, case_id=case_id, output_dir=out_path)
+        resolved_pcap = Path(pcap_file).resolve()
+        net_meta = extract_metadata(pcap_path=resolved_pcap, case_id=case_id, output_dir=out_path)
         rf = Path(rules_file) if Path(rules_file).exists() else None
-        det_report = analyze_suspicious_behavior(net_meta, rules_file=rf, output_dir=out_path)
+        det_report = analyze_suspicious_behavior(
+            net_meta, rules_file=rf, output_dir=out_path, explicit_pcap_path=resolved_pcap
+        )
 
         tl = build_timeline(net_meta, det_report)
         csv_file = out_path / "timeline.csv"
