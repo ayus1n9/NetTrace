@@ -63,7 +63,7 @@ In modern Security Operations Center (SOC) environments, analyzing suspicious tr
                     ┌───────────────────────────┐
                     │   Detection & Analysis    │
                     │   • Suricata Offline IDS  │
-                    │   • Custom Rule Validation│
+                    │   • Custom Rule Signatures│
                     │   • Beaconing & Anomalies │
                     └─────────────┬─────────────┘
                                   │
@@ -144,9 +144,16 @@ nettrace ioc /path/to/capture.pcap \
   --output-dir cases/example-case/
 ```
 
+### Step 4: Network Detection & Behavioral Analysis (Day 4)
+```bash
+nettrace detect /path/to/capture.pcap \
+  --case-id "PCAP-2026-001" \
+  --rules-file configs/suricata/custom.rules \
+  --output-dir cases/example-case/
+```
+
 Outputs generated:
-- `cases/example-case/iocs.json` (Structured JSON strictly adhering to `schemas/case-report.schema.json`)
-- `cases/example-case/iocs.csv` (Tabular format ready for SIEM, MISP, or OpenCTI ingestion)
+- `cases/example-case/findings.json` (Consolidated signature alerts, periodic beaconing metrics, and anomalous port detections with confidence ratings and alternative benign explanations)
 
 ---
 
@@ -155,7 +162,7 @@ Outputs generated:
 - [x] **Day 1**: Case Intake, Header Validation, and Cryptographic Integrity Verification. (`v0.1.0`)
 - [x] **Day 2**: Connection, DNS, HTTP, and TLS Metadata Extraction Subsystem. (`v0.2.0`)
 - [x] **Day 3**: Structured IOC Parsing, Defanging, and Schema Validation. (`v0.3.0`)
-- [ ] **Day 4**: Suricata Offline Analysis & Custom Detection Rules.
+- [x] **Day 4**: Suricata Offline Detection, Custom Rule Evaluation & Behavioral Analysis. (`v0.4.0`)
 - [ ] **Day 5**: Cross-Source Chronological Event Timeline Generation.
 - [ ] **Day 6**: MITRE ATT&CK Mapping & Incident Report Generation.
 - [ ] **Day 7**: End-to-End Case Investigation & Final Release Documentation.

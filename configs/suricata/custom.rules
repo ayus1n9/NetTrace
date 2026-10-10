@@ -1,0 +1,14 @@
+# NetTrace Custom Suricata Detection Rules
+# Evidence-grounded network detection rules for common malware traffic patterns.
+
+# 1. Suspicious Executable Download over cleartext HTTP
+alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"NETTRACE SUSPICIOUS Windows Executable Download (.exe)"; flow:established,to_server; http.method; content:"GET"; http.uri; content:".exe"; nocase; endswith; classtype:bad-unknown; sid:1000001; rev:1;)
+
+# 2. Suspicious Dynamic DNS / Suspicious TLD Query
+alert dns $HOME_NET any -> any 53 (msg:"NETTRACE SUSPICIOUS Query to Potentially Malicious Dynamic DNS or TLD"; dns.query; content:".xyz"; nocase; endswith; classtype:policy-violation; sid:1000002; rev:1;)
+
+# 3. Non-Standard High Port HTTP / Plaintext Beaconing
+alert tcp $HOME_NET any -> $EXTERNAL_NET ![80,443,8080] (msg:"NETTRACE ANOMALY Plaintext HTTP on Non-Standard Port"; flow:established,to_server; content:"GET "; depth:4; classtype:protocol-command-decode; sid:1000003; rev:1;)
+
+# 4. Suspected C2 TLS SNI to High-Entropy or Flagged Domain
+alert tls $HOME_NET any -> $EXTERNAL_NET 443 (msg:"NETTRACE SUSPICIOUS TLS SNI Matching Known C2 Beacon Pattern"; tls.sni; content:"beacon-c2"; nocase; classtype:trojan-activity; sid:1000004; rev:1;)

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from typing import Optional
 
 import click
 
+from pcap_analyzer.detection import analyze_suspicious_behavior
 from pcap_analyzer.extraction import extract_metadata
 from pcap_analyzer.intake import IntakeValidationError, intake_capture
 from pcap_analyzer.ioc_extractor import (
@@ -119,6 +121,34 @@ def ioc_cmd(pcap_file: str, case_id: str, output_dir: str) -> None:
         click.echo(f"  CSV Export:        {csv_file}")
     except Exception as e:
         click.secho(f"✗ IOC extraction error: {e}", fg="red", err=True)
+        sys.exit(1)
+
+
+@main.command(name="detect")
+@click.argument("pcap_file", type=click.Path())
+@click.option("--case-id", "-c", required=True, help="Unique case identifier.")
+@click.option("--rules-file", "-r", default="configs/suricata/custom.rules", type=click.Path(), help="Path to rules file.")
+@click.option("--output-dir", "-o", default="cases/output", type=click.Path(), help="Directory to save findings.")
+def detect_cmd(pcap_file: str, case_id: str, rules_file: str, output_dir: str) -> None:
+    """Analyze suspicious network behaviors and run intrusion detection rules."""
+    try:
+        out_path = Path(output_dir)
+        out_path.mkdir(parents=True, exist_ok=True)
+        net_meta = extract_metadata(pcap_path=pcap_file, case_id=case_id, output_dir=out_path)
+        rf = Path(rules_file) if Path(rules_file).exists() else None
+
+        report = analyze_suspicious_behavior(net_meta, rules_file=rf, output_dir=out_path)
+        findings_path = out_path / "findings.json"
+        with open(findings_path, "w", encoding="utf-8") as f:
+            f.write(report.model_dump_json(indent=2))
+
+        click.echo("✓ Network detection analysis complete.")
+        click.echo(f"  Total Findings:      {len(report.findings)}")
+        click.echo(f"  Suricata Alerts:     {report.suricata_alerts_count}")
+        click.echo(f"  Behavior Anomalies:  {report.behavioral_anomalies_count}")
+        click.echo(f"  Findings saved:      {findings_path}")
+    except Exception as e:
+        click.secho(f"✗ Detection analysis error: {e}", fg="red", err=True)
         sys.exit(1)
 
 
