@@ -24,6 +24,7 @@ In modern Security Operations Center (SOC) environments, analyzing suspicious tr
 - **Evidence Immutability**: Source captures are hashed, validated via binary header inspection, and treated as immutable forensic artifacts.
 - **Explainable Attribution**: Clear distinction between *Confirmed*, *Probable*, *Possible*, and *Inconclusive* malware attributions.
 - **Indicator Defanging**: All candidate IPs, domains, and URLs are defanged (`1.1.1[.]1`, `evil[.]com`, `hxxp://...`) to prevent accidental execution or automated preview resolution when sharing forensic findings.
+- **Normalized UTC Timelines**: All timestamps across disparate network layers (DNS, flows, HTTP, TLS, IDS alerts) are normalized to ISO-8601 UTC to eliminate timezone ambiguity during incident correlation.
 - **Encrypted Traffic Realism**: HTTPS/TLS encryption prevents passive packet captures from revealing application payloads; extraction is transparently constrained to handshake metadata (SNI, endpoints, ciphers).
 
 ---
@@ -69,8 +70,15 @@ In modern Security Operations Center (SOC) environments, analyzing suspicious tr
                                   │
                                   ▼
                     ┌───────────────────────────┐
+                    │    Timeline Correlation   │
+                    │   • Unified UTC Events    │
+                    │   • DNS -> Flow -> L7/TLS │
+                    │   • CSV & Markdown Tables │
+                    └─────────────┬─────────────┘
+                                  │
+                                  ▼
+                    ┌───────────────────────────┐
                     │      SOC Investigation    │
-                    │   • Unified UTC Timeline  │
                     │   • MITRE ATT&CK Mapping  │
                     │   • Incident Report (.md) │
                     └───────────────────────────┘
@@ -152,8 +160,15 @@ nettrace detect /path/to/capture.pcap \
   --output-dir cases/example-case/
 ```
 
+### Step 5: Chronological Timeline Correlation (Day 5)
+```bash
+nettrace timeline /path/to/capture.pcap \
+  --case-id "PCAP-2026-001" \
+  --output-dir cases/example-case/
+```
+
 Outputs generated:
-- `cases/example-case/findings.json` (Consolidated signature alerts, periodic beaconing metrics, and anomalous port detections with confidence ratings and alternative benign explanations)
+- `cases/example-case/timeline.csv` (Standardized chronological event table linking DNS resolution, transport flows, L7 requests, and detection alerts)
 
 ---
 
@@ -163,6 +178,6 @@ Outputs generated:
 - [x] **Day 2**: Connection, DNS, HTTP, and TLS Metadata Extraction Subsystem. (`v0.2.0`)
 - [x] **Day 3**: Structured IOC Parsing, Defanging, and Schema Validation. (`v0.3.0`)
 - [x] **Day 4**: Suricata Offline Detection, Custom Rule Evaluation & Behavioral Analysis. (`v0.4.0`)
-- [ ] **Day 5**: Cross-Source Chronological Event Timeline Generation.
+- [x] **Day 5**: Cross-Source Chronological Event Timeline Generation. (`v0.5.0`)
 - [ ] **Day 6**: MITRE ATT&CK Mapping & Incident Report Generation.
 - [ ] **Day 7**: End-to-End Case Investigation & Final Release Documentation.

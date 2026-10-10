@@ -17,6 +17,11 @@ from pcap_analyzer.ioc_extractor import (
     export_iocs_to_json,
     extract_iocs,
 )
+from pcap_analyzer.timeline import (
+    build_timeline,
+    export_timeline_csv,
+    export_timeline_markdown,
+)
 
 
 @click.group()
@@ -149,6 +154,32 @@ def detect_cmd(pcap_file: str, case_id: str, rules_file: str, output_dir: str) -
         click.echo(f"  Findings saved:      {findings_path}")
     except Exception as e:
         click.secho(f"✗ Detection analysis error: {e}", fg="red", err=True)
+        sys.exit(1)
+
+
+@main.command(name="timeline")
+@click.argument("pcap_file", type=click.Path())
+@click.option("--case-id", "-c", required=True, help="Unique case identifier.")
+@click.option("--rules-file", "-r", default="configs/suricata/custom.rules", type=click.Path(), help="Path to rules file.")
+@click.option("--output-dir", "-o", default="cases/output", type=click.Path(), help="Directory to save timeline.")
+def timeline_cmd(pcap_file: str, case_id: str, rules_file: str, output_dir: str) -> None:
+    """Build a unified, chronologically correlated investigation timeline."""
+    try:
+        out_path = Path(output_dir)
+        out_path.mkdir(parents=True, exist_ok=True)
+        net_meta = extract_metadata(pcap_path=pcap_file, case_id=case_id, output_dir=out_path)
+        rf = Path(rules_file) if Path(rules_file).exists() else None
+        det_report = analyze_suspicious_behavior(net_meta, rules_file=rf, output_dir=out_path)
+
+        tl = build_timeline(net_meta, det_report)
+        csv_file = out_path / "timeline.csv"
+        export_timeline_csv(tl, csv_file)
+
+        click.echo("✓ Investigation timeline built.")
+        click.echo(f"  Events Correlated: {tl.events_count}")
+        click.echo(f"  Timeline saved:    {csv_file}")
+    except Exception as e:
+        click.secho(f"✗ Timeline generation error: {e}", fg="red", err=True)
         sys.exit(1)
 
 
