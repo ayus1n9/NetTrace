@@ -1,0 +1,97 @@
+{
+  "case_id": "PCAP-2026-MAL-001",
+  "source_file": "demo_investigation.pcap",
+  "sha256": "070cf0f6e9a95094007826f2e0effbf3e0d652f28df534d71dfbc8eb5fb5ae38",
+  "indicators": {
+    "ips": [
+      {
+        "value": "10.0.0.45",
+        "defanged": "10.0.0[.]45",
+        "ip_version": 4,
+        "is_private": true,
+        "sources": [
+          "flow_src"
+        ],
+        "relevance_notes": "Internal host endpoint"
+      },
+      {
+        "value": "10.0.0.1",
+        "defanged": "10.0.0[.]1",
+        "ip_version": 4,
+        "is_private": true,
+        "sources": [
+          "flow_dst"
+        ],
+        "relevance_notes": "Internal host endpoint"
+      },
+      {
+        "value": "198.51.100.44",
+        "defanged": "198.51.100[.]44",
+        "ip_version": 4,
+        "is_private": false,
+        "sources": [
+          "dns_resolution",
+          "flow_dst"
+        ],
+        "relevance_notes": "External remote endpoint"
+      },
+      {
+        "value": "203.0.113.88",
+        "defanged": "203.0.113[.]88",
+        "ip_version": 4,
+        "is_private": false,
+        "sources": [
+          "dns_resolution",
+          "flow_dst"
+        ],
+        "relevance_notes": "External remote endpoint"
+      }
+    ],
+    "domains": [
+      {
+        "value": "update-portal-cdn.xyz",
+        "defanged": "update-portal-cdn[.]xyz",
+        "sources": [
+          "dns_query",
+          "http_host"
+        ],
+        "resolved_ips": [
+          "198.51.100.44"
+        ],
+        "relevance_notes": "Queried domain candidate"
+      },
+      {
+        "value": "c2-beacon-service.net",
+        "defanged": "c2-beacon-service[.]net",
+        "sources": [
+          "dns_query"
+        ],
+        "resolved_ips": [
+          "203.0.113.88"
+        ],
+        "relevance_notes": "Queried domain candidate"
+      },
+      {
+        "value": "beacon-c2.net",
+        "defanged": "beacon-c2[.]net",
+        "sources": [
+          "tls_sni"
+        ],
+        "resolved_ips": [],
+        "relevance_notes": "Observed TLS SNI connection to 203.0.113.88:443"
+      }
+    ],
+    "urls": [
+      {
+        "value": "http://update-portal-cdn.xyz/update_agent.exe",
+        "defanged": "hxxp://update-portal-cdn[.]xyz/update_agent.exe",
+        "host": "update-portal-cdn.xyz",
+        "uri": "/update_agent.exe",
+        "method": "GET",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) LoaderAgent/2.1"
+      }
+    ],
+    "file_hashes": []
+  },
+  "analysis_status": "completed"
+}

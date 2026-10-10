@@ -1,0 +1,73 @@
+{
+  "case_id": "PCAP-2026-MAL-001",
+  "pcap_filename": "demo_investigation.pcap",
+  "findings": [
+    {
+      "finding_id": "FIND-001",
+      "evidence_source": "HTTP Log / Rule SID 1000001",
+      "timestamp": "2026-10-10T06:31:31.873157+00:00",
+      "source_endpoint": "10.0.0.45:49200",
+      "destination_endpoint": "198.51.100.44:80",
+      "observed_behavior": "GET request for binary file '/update_agent.exe' to host 'update-portal-cdn.xyz'",
+      "why_suspicious": "Adversaries frequently deliver second-stage implants, drop-executables, or tools via direct unencrypted HTTP requests.",
+      "alternative_benign_explanations": "Legitimate legacy software update or internal administrative installer fetch over HTTP.",
+      "confidence_level": "High",
+      "recommended_follow_up": "Investigate endpoint process creation logs (Sysmon EID 1) around timestamp; acquire downloaded file if available to compute hash.",
+      "rule_id": "1000001"
+    },
+    {
+      "finding_id": "FIND-002",
+      "evidence_source": "DNS Log / Rule SID 1000002",
+      "timestamp": "2026-10-10T06:31:31.872486+00:00",
+      "source_endpoint": "10.0.0.45",
+      "destination_endpoint": "10.0.0.1:53",
+      "observed_behavior": "DNS query for 'update-portal-cdn.xyz' resolving to []",
+      "why_suspicious": "High-abuse TLDs and dynamic DNS domains are commonly registered by threat actors for short-lived C2 infrastructure.",
+      "alternative_benign_explanations": "Benign web navigation to a legitimate business website utilizing non-standard TLDs.",
+      "confidence_level": "Medium",
+      "recommended_follow_up": "Check passive DNS history for domain; query endpoint proxy/web browsing logs for referer URL.",
+      "rule_id": "1000002"
+    },
+    {
+      "finding_id": "FIND-003",
+      "evidence_source": "DNS Log / Rule SID 1000002",
+      "timestamp": "2026-10-10T06:31:31.872839+00:00",
+      "source_endpoint": "10.0.0.1",
+      "destination_endpoint": "10.0.0.45:53",
+      "observed_behavior": "DNS query for 'update-portal-cdn.xyz' resolving to ['198.51.100.44']",
+      "why_suspicious": "High-abuse TLDs and dynamic DNS domains are commonly registered by threat actors for short-lived C2 infrastructure.",
+      "alternative_benign_explanations": "Benign web navigation to a legitimate business website utilizing non-standard TLDs.",
+      "confidence_level": "Medium",
+      "recommended_follow_up": "Check passive DNS history for domain; query endpoint proxy/web browsing logs for referer URL.",
+      "rule_id": "1000002"
+    },
+    {
+      "finding_id": "FIND-004",
+      "evidence_source": "TLS Handshake / Rule SID 1000004",
+      "timestamp": "2026-10-10T06:31:31.873784+00:00",
+      "source_endpoint": "10.0.0.45:49201",
+      "destination_endpoint": "203.0.113.88:443",
+      "observed_behavior": "TLS ClientHello SNI header requesting server name 'beacon-c2.net'",
+      "why_suspicious": "Observed TLS SNI matches suspected command-and-control server naming patterns.",
+      "alternative_benign_explanations": "Coincidental naming in internal testing or legitimate telemetry service.",
+      "confidence_level": "High",
+      "recommended_follow_up": "Inspect active network connections and memory artifacts of the source host for injected beacon threads.",
+      "rule_id": "1000004"
+    },
+    {
+      "finding_id": "FIND-005",
+      "evidence_source": "TLS Handshake / Rule SID 1000004",
+      "timestamp": "2026-10-10T06:31:31.873954+00:00",
+      "source_endpoint": "10.0.0.45:49202",
+      "destination_endpoint": "203.0.113.88:443",
+      "observed_behavior": "TLS ClientHello SNI header requesting server name 'beacon-c2.net'",
+      "why_suspicious": "Observed TLS SNI matches suspected command-and-control server naming patterns.",
+      "alternative_benign_explanations": "Coincidental naming in internal testing or legitimate telemetry service.",
+      "confidence_level": "High",
+      "recommended_follow_up": "Inspect active network connections and memory artifacts of the source host for injected beacon threads.",
+      "rule_id": "1000004"
+    }
+  ],
+  "suricata_alerts_count": 0,
+  "behavioral_anomalies_count": 5
+}

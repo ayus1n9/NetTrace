@@ -1,0 +1,13 @@
+{
+  "case_id": "PCAP-2026-MAL-001",
+  "pcap_filename": "demo_investigation.pcap",
+  "pcap_path": "/home/s1n9/.gemini/antigravity/scratch/NetTrace/evidence/demo_investigation.pcap",
+  "dataset_source_url": null,
+  "publication_date": null,
+  "file_size_bytes": 880,
+  "sha256": "070cf0f6e9a95094007826f2e0effbf3e0d652f28df534d71dfbc8eb5fb5ae38",
+  "magic_type": "pcap (microsecond, identical byte order)",
+  "analysis_start_time": "2026-10-10T06:31:45.728607+00:00",
+  "analyst_notes": null,
+  "file_preserved": true
+}

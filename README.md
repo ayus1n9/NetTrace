@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python: 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Release: v1.0.0](https://img.shields.io/badge/release-v1.0.0-green.svg)](https://github.com/ayus1n9/NetTrace/releases)
 
 > **Portfolio Title**: Network Threat Hunting and Malware Traffic Investigation Using Wireshark, Zeek, and Suricata  
 > **Target Roles**: SOC Analyst, Network Security Analyst, Incident Response Specialist, Junior Threat Hunter.
@@ -148,7 +149,16 @@ This single command triggers the entire pipeline:
 
 ---
 
-## 6. Implementation Roadmap
+## 6. What This Demonstrates to a SOC Hiring Manager
+
+1. **Forensic Chain of Custody**: Cryptographic integrity checks (SHA-256) ensuring evidence is preserved and unmutated throughout analysis.
+2. **Defensive Reasoning**: Differentiates between internal corporate infrastructure and external remote assets; avoids false-positive blacklisting of CDNs or public DNS.
+3. **Evidence-Driven Attribution**: Adheres to strict confidence tiers (`Confirmed`, `Probable`, `Possible`, `Inconclusive`) rather than making speculative claims without endpoint telemetry.
+4. **Repeatable Engineering**: Production-quality Python package featuring 100% offline synthetic test fixtures and zero live execution hazards.
+
+---
+
+## 7. Implementation Roadmap & Release History
 
 - [x] **Day 1**: Case Intake, Header Validation, and Cryptographic Integrity Verification. (`v0.1.0`)
 - [x] **Day 2**: Connection, DNS, HTTP, and TLS Metadata Extraction Subsystem. (`v0.2.0`)
@@ -156,4 +166,4 @@ This single command triggers the entire pipeline:
 - [x] **Day 4**: Suricata Offline Detection, Custom Rule Evaluation & Behavioral Analysis. (`v0.4.0`)
 - [x] **Day 5**: Cross-Source Chronological Event Timeline Generation. (`v0.5.0`)
 - [x] **Day 6**: MITRE ATT&CK Mapping & Incident Report Generation. (`v0.6.0`)
-- [ ] **Day 7**: End-to-End Case Investigation & Final Release Documentation.
+- [x] **Day 7**: Portfolio Release, Methodology Documentation, Limitations Guide, and Full Example Case. (`v1.0.0`)

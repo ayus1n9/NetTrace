@@ -1,0 +1,9 @@
+Indicator_Type,Value,Defanged,Sources,Relevance_Notes
+IP,10.0.0.45,10.0.0[.]45,flow_src,Internal host endpoint
+IP,10.0.0.1,10.0.0[.]1,flow_dst,Internal host endpoint
+IP,198.51.100.44,198.51.100[.]44,dns_resolution;flow_dst,External remote endpoint
+IP,203.0.113.88,203.0.113[.]88,dns_resolution;flow_dst,External remote endpoint
+Domain,update-portal-cdn.xyz,update-portal-cdn[.]xyz,dns_query;http_host,Queried domain candidate
+Domain,c2-beacon-service.net,c2-beacon-service[.]net,dns_query,Queried domain candidate
+Domain,beacon-c2.net,beacon-c2[.]net,tls_sni,Observed TLS SNI connection to 203.0.113.88:443
+URL,http://update-portal-cdn.xyz/update_agent.exe,hxxp://update-portal-cdn[.]xyz/update_agent.exe,Method:GET,User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) LoaderAgent/2.1

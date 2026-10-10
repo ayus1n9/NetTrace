@@ -1,0 +1,147 @@
+{
+  "case_id": "PCAP-2026-MAL-001",
+  "pcap_filename": "demo_investigation.pcap",
+  "extraction_source": "pure_python_scapy",
+  "extracted_at": "2026-10-10T06:31:45.737411+00:00",
+  "connections": [
+    {
+      "flow_id": "10.0.0.1:53->10.0.0.45:53210/UDP",
+      "src_ip": "10.0.0.45",
+      "src_port": 53210,
+      "dst_ip": "10.0.0.1",
+      "dst_port": 53,
+      "protocol": "UDP",
+      "start_time": "2026-10-10T06:31:31.872486+00:00",
+      "end_time": "2026-10-10T06:31:31.872839+00:00",
+      "packet_count": 2,
+      "byte_count": 171
+    },
+    {
+      "flow_id": "10.0.0.45:49200->198.51.100.44:80/TCP",
+      "src_ip": "10.0.0.45",
+      "src_port": 49200,
+      "dst_ip": "198.51.100.44",
+      "dst_port": 80,
+      "protocol": "TCP",
+      "start_time": "2026-10-10T06:31:31.873157+00:00",
+      "end_time": "2026-10-10T06:31:31.873157+00:00",
+      "packet_count": 1,
+      "byte_count": 174
+    },
+    {
+      "flow_id": "10.0.0.1:53->10.0.0.45:53211/UDP",
+      "src_ip": "10.0.0.45",
+      "src_port": 53211,
+      "dst_ip": "10.0.0.1",
+      "dst_port": 53,
+      "protocol": "UDP",
+      "start_time": "2026-10-10T06:31:31.873371+00:00",
+      "end_time": "2026-10-10T06:31:31.873563+00:00",
+      "packet_count": 2,
+      "byte_count": 171
+    },
+    {
+      "flow_id": "10.0.0.45:49201->203.0.113.88:443/TCP",
+      "src_ip": "10.0.0.45",
+      "src_port": 49201,
+      "dst_ip": "203.0.113.88",
+      "dst_port": 443,
+      "protocol": "TCP",
+      "start_time": "2026-10-10T06:31:31.873784+00:00",
+      "end_time": "2026-10-10T06:31:31.873784+00:00",
+      "packet_count": 1,
+      "byte_count": 114
+    },
+    {
+      "flow_id": "10.0.0.45:49202->203.0.113.88:443/TCP",
+      "src_ip": "10.0.0.45",
+      "src_port": 49202,
+      "dst_ip": "203.0.113.88",
+      "dst_port": 443,
+      "protocol": "TCP",
+      "start_time": "2026-10-10T06:31:31.873954+00:00",
+      "end_time": "2026-10-10T06:31:31.873954+00:00",
+      "packet_count": 1,
+      "byte_count": 114
+    }
+  ],
+  "dns_queries": [
+    {
+      "timestamp": "2026-10-10T06:31:31.872486+00:00",
+      "src_ip": "10.0.0.45",
+      "dst_ip": "10.0.0.1",
+      "query_name": "update-portal-cdn.xyz",
+      "query_type": "A",
+      "response_code": null,
+      "answers": []
+    },
+    {
+      "timestamp": "2026-10-10T06:31:31.872839+00:00",
+      "src_ip": "10.0.0.1",
+      "dst_ip": "10.0.0.45",
+      "query_name": "update-portal-cdn.xyz",
+      "query_type": "A",
+      "response_code": "0",
+      "answers": [
+        "198.51.100.44"
+      ]
+    },
+    {
+      "timestamp": "2026-10-10T06:31:31.873371+00:00",
+      "src_ip": "10.0.0.45",
+      "dst_ip": "10.0.0.1",
+      "query_name": "c2-beacon-service.net",
+      "query_type": "A",
+      "response_code": null,
+      "answers": []
+    },
+    {
+      "timestamp": "2026-10-10T06:31:31.873563+00:00",
+      "src_ip": "10.0.0.1",
+      "dst_ip": "10.0.0.45",
+      "query_name": "c2-beacon-service.net",
+      "query_type": "A",
+      "response_code": "0",
+      "answers": [
+        "203.0.113.88"
+      ]
+    }
+  ],
+  "http_requests": [
+    {
+      "timestamp": "2026-10-10T06:31:31.873157+00:00",
+      "src_ip": "10.0.0.45",
+      "src_port": 49200,
+      "dst_ip": "198.51.100.44",
+      "dst_port": 80,
+      "method": "GET",
+      "host": "update-portal-cdn.xyz",
+      "uri": "/update_agent.exe",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) LoaderAgent/2.1",
+      "status_code": null
+    }
+  ],
+  "tls_handshakes": [
+    {
+      "timestamp": "2026-10-10T06:31:31.873784+00:00",
+      "src_ip": "10.0.0.45",
+      "src_port": 49201,
+      "dst_ip": "203.0.113.88",
+      "dst_port": 443,
+      "server_name": "beacon-c2.net",
+      "version": null,
+      "cipher_suite": null
+    },
+    {
+      "timestamp": "2026-10-10T06:31:31.873954+00:00",
+      "src_ip": "10.0.0.45",
+      "src_port": 49202,
+      "dst_ip": "203.0.113.88",
+      "dst_port": 443,
+      "server_name": "beacon-c2.net",
+      "version": null,
+      "cipher_suite": null
+    }
+  ],
+  "encryption_notes": "Passive inspection only. Full application payloads for encrypted HTTPS/TLS sessions are not recovered."
+}
